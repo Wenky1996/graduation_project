@@ -21,7 +21,7 @@
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr map(new pcl::PointCloud<pcl::PointXYZRGB>());
 
-std::queue<nav_msgs::Odometry ::Ptr> pose_vio_buf;
+std::queue<nav_msgs::Odometry::ConstPtr> pose_vio_buf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointcloud_buf;
 
 void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg);
@@ -29,7 +29,7 @@ void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose);
 void CreatMap();
 
 
-Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::Ptr NavMsg);
+Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::ConstPtr NavMsg);
 
 ros::Publisher map_pub;
 
@@ -48,34 +48,35 @@ int main(int argc ,char **argv){
 
 void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg) {
     pointcloud_buf.push(pointCloudmsg);
-    ROS_INFO("point cloud time stamp %f",pointCloudmsg->header.stamp.toSec());
+    //ROS_INFO("point cloud time stamp %f",pointCloudmsg->header.stamp.toSec());
 }
 
 void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose){
-    nav_msgs::Odometry::Ptr pose_vio=NULL;
-    pose_vio->pose.pose.orientation.w=vioKeyPose->pose.pose.orientation.w;
-    pose_vio->pose.pose.orientation.x=vioKeyPose->pose.pose.orientation.x;
-    pose_vio->pose.pose.orientation.y=vioKeyPose->pose.pose.orientation.y;
-    pose_vio->pose.pose.orientation.z=vioKeyPose->pose.pose.orientation.z;
-    pose_vio->pose.pose.position.y=vioKeyPose->pose.pose.position.y;
-    pose_vio->pose.pose.position.x=vioKeyPose->pose.pose.position.x;
-    pose_vio->pose.pose.position.z=vioKeyPose->pose.pose.position.z;
-    pose_vio->header.stamp=vioKeyPose->header.stamp;
-    ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
-    pose_vio_buf.push(pose_vio);
+     //nav_msgs::Odometry::Ptr pose_vio=NULL;
+     // pose_vio->pose.pose.orientation.w=vioKeyPose->pose.pose.orientation.w;
+    //ROS_INFO("pose.pose.position x= %f",vioKeyPose->pose.pose.position.x);
+    //pose_vio->pose.pose.orientation.x=vioKeyPose->pose.pose.orientation.x;
+    //pose_vio->pose.pose.orientation.y=vioKeyPose->pose.pose.orientation.y;
+    //pose_vio->pose.pose.orientation.z=vioKeyPose->pose.pose.orientation.z;
+    //pose_vio->pose.pose.position.y=vioKeyPose->pose.pose.position.y;
+    //pose_vio->pose.pose.position.x=vioKeyPose->pose.pose.position.x;
+    //pose_vio->pose.pose.position.z=vioKeyPose->pose.pose.position.z;
+    //pose_vio->header.stamp=vioKeyPose->header.stamp;
+    //ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
+    pose_vio_buf.push(vioKeyPose);
 }
 
 void CreatMap(){
-    nav_msgs::Odometry::Ptr vioPose;
+    nav_msgs::Odometry::ConstPtr vioPose;
     while(true){
         if(!(pose_vio_buf.empty()||pointcloud_buf.empty())){
         sensor_msgs::PointCloud2ConstPtr pointCloudMsg;
         vioPose=pose_vio_buf.front();
-        auto vio_stamp=vioPose->header.stamp.toSec();
+        auto vio_stamp=vioPose->header.stamp;
         pointCloudMsg = pointcloud_buf.front();
         int i_cnt=0;
         auto pointCloud_stamp = pointCloudMsg->header.stamp;
-        if(abs(vio_stamp-pointCloud_stamp.toSec())<0.03){//1/30小于1帧
+        if(abs(vio_stamp.toSec()-pointCloud_stamp.toSec())<0.03){//1/30小于1帧
             pose_vio_buf.pop();
             pointcloud_buf.pop();
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -85,15 +86,16 @@ void CreatMap(){
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_point(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::transformPointCloud(*pointCloud,*transformed_point,transform_pose.cast<float>());
             *map+=*transformed_point;
-            if(i_cnt%30==0){
+            if(i_cnt%600==0){
                 sensor_msgs::PointCloud2 pointMapMsg;
                 pcl::toROSMsg(*map,pointMapMsg);
                 pointMapMsg.header.stamp=pointCloud_stamp;
                 pointMapMsg.header.frame_id="map";
+                ROS_INFO("map size = %d",map->points.size());
                 map_pub.publish(pointMapMsg);
             }
         } else{
-            if(vio_stamp>pointCloud_stamp.toSec()){
+            if(vio_stamp.toSec()>pointCloud_stamp.toSec()){
                 pointcloud_buf.pop();
             } else{
                 pose_vio_buf.pop();
@@ -107,7 +109,7 @@ void CreatMap(){
 /*
  *    transform NavMsg to Eigen Isometry3d
  */
-Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::Ptr NavMsg){
+Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::ConstPtr NavMsg){
     Eigen::Quaterniond pose_quaternion(1,0,0,0);
     Eigen::Vector3d pose_transalte(0,0,0);
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
