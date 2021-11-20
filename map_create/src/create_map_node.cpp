@@ -32,6 +32,7 @@ void CreatMap();
 Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::ConstPtr NavMsg);
 
 ros::Publisher map_pub;
+int drop_cnt=0;
 
 
 int main(int argc ,char **argv){
@@ -47,7 +48,10 @@ int main(int argc ,char **argv){
 }
 
 void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg) {
-    pointcloud_buf.push(pointCloudmsg);
+    if(drop_cnt%10==0) {
+        pointcloud_buf.push(pointCloudmsg);
+    }
+    drop_cnt++;
     //ROS_INFO("point cloud time stamp %f",pointCloudmsg->header.stamp.toSec());
 }
 
@@ -63,13 +67,16 @@ void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose){
     //pose_vio->pose.pose.position.z=vioKeyPose->pose.pose.position.z;
     //pose_vio->header.stamp=vioKeyPose->header.stamp;
     //ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
-    pose_vio_buf.push(vioKeyPose);
+    if(drop_cnt%10==0) {
+        pose_vio_buf.push(vioKeyPose);
+    }
 }
 
 void CreatMap(){
     nav_msgs::Odometry::ConstPtr vioPose;
     while(true){
         if(!(pose_vio_buf.empty()||pointcloud_buf.empty())){
+
         sensor_msgs::PointCloud2ConstPtr pointCloudMsg;
         vioPose=pose_vio_buf.front();
         auto vio_stamp=vioPose->header.stamp;
@@ -81,6 +88,7 @@ void CreatMap(){
             pointcloud_buf.pop();
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::fromROSMsg(*pointCloudMsg,*pointCloud);
+
             Eigen::Isometry3d transform_pose = Eigen::Isometry3d::Identity();
             transform_pose =  NavMsg2Isometry3D(vioPose);
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_point(new pcl::PointCloud<pcl::PointXYZRGB>());
