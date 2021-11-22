@@ -15,8 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     cv_bridge
     )
-
-find_package(OpenCV 4.5 REQUIRED)
+set(OpenCV_DIR "/home/zwk/SoftWear/LibResource/opencv-3.4.8/build")
+find_package(OpenCV  REQUIRED)
 
 # message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 

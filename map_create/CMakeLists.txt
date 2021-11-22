@@ -10,9 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         cv_bridge
         )
+set(OpenCV_DIR "/home/zwk/SoftWear/LibResource/opencv-3.4.8/build")
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
+
 
 find_package(PCL REQUIRED)
 include_directories( ${PCL_INCLUDE_DIRS} )

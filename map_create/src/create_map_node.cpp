@@ -50,6 +50,7 @@ int main(int argc ,char **argv){
 void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg) {
     if(drop_cnt%10==0) {
         pointcloud_buf.push(pointCloudmsg);
+        ROS_INFO("point cloud time stamp %f",pointCloudmsg->header.stamp.toSec());
     }
     drop_cnt++;
     //ROS_INFO("point cloud time stamp %f",pointCloudmsg->header.stamp.toSec());
@@ -69,6 +70,7 @@ void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose){
     //ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
     if(drop_cnt%10==0) {
         pose_vio_buf.push(vioKeyPose);
+        ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
     }
 }
 
@@ -94,7 +96,7 @@ void CreatMap(){
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_point(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::transformPointCloud(*pointCloud,*transformed_point,transform_pose.cast<float>());
             *map+=*transformed_point;
-            if(i_cnt%600==0){
+            if(i_cnt%60==0){
                 sensor_msgs::PointCloud2 pointMapMsg;
                 pcl::toROSMsg(*map,pointMapMsg);
                 pointMapMsg.header.stamp=pointCloud_stamp;

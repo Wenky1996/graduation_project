@@ -13,7 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
     camera_model
     )
 
-find_package(OpenCV 4.5 REQUIRED)
+set(OpenCV_DIR "/home/zwk/SoftWear/LibResource/opencv-3.4.8/build")
+find_package(OpenCV  REQUIRED)
 
 catkin_package()
 

@@ -105,7 +105,6 @@ void Rgbd2Point(){
             pcl::toROSMsg(*cloud,pub_pointcloud);
             pub_pointcloud.header.frame_id="map";
             pub_pointcloud.header.stamp=ptr_msg_color->header.stamp;
-            ROS_INFO("point cloud time = %f",ptr_msg_color->header.stamp);
             pointcloudPublish.publish(pub_pointcloud);
         }
         //sleep 2 ms every time
