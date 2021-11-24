@@ -39,7 +39,7 @@ int main(int argc ,char **argv){
     ros::init(argc, argv, "map_create");
     ros::NodeHandle n;
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-    ros::Subscriber subPointCloud = n.subscribe<sensor_msgs::PointCloud2>("/fusion_pointcloud", 100, PointCloudHandler);
+    ros::Subscriber subPointCloud = n.subscribe<sensor_msgs::PointCloud2>("/camera/depth/color/points", 100, PointCloudHandler);
     ros::Subscriber subkeyPose = n.subscribe("/pose_graph/camera_pose",2000,KeyPoseHandler);
     map_pub = n.advertise<sensor_msgs::PointCloud2>("create_map", 100);
     std::thread creat_map_thread{CreatMap};
@@ -58,15 +58,15 @@ void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg) {
 void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose){
      //nav_msgs::Odometry::Ptr pose_vio=NULL;
      // pose_vio->pose.pose.orientation.w=vioKeyPose->pose.pose.orientation.w;
-    //ROS_INFO("pose.pose.position x= %f",vioKeyPose->pose.pose.position.x);
-    //pose_vio->pose.pose.orientation.x=vioKeyPose->pose.pose.orientation.x;
-    //pose_vio->pose.pose.orientation.y=vioKeyPose->pose.pose.orientation.y;
-    //pose_vio->pose.pose.orientation.z=vioKeyPose->pose.pose.orientation.z;
-    //pose_vio->pose.pose.position.y=vioKeyPose->pose.pose.position.y;
-    //pose_vio->pose.pose.position.x=vioKeyPose->pose.pose.position.x;
-    //pose_vio->pose.pose.position.z=vioKeyPose->pose.pose.position.z;
-    //pose_vio->header.stamp=vioKeyPose->header.stamp;
-    //ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
+     //ROS_INFO("pose.pose.position x= %f",vioKeyPose->pose.pose.position.x);
+     //pose_vio->pose.pose.orientation.x=vioKeyPose->pose.pose.orientation.x;
+     //pose_vio->pose.pose.orientation.y=vioKeyPose->pose.pose.orientation.y;
+     //pose_vio->pose.pose.orientation.z=vioKeyPose->pose.pose.orientation.z;
+     //pose_vio->pose.pose.position.y=vioKeyPose->pose.pose.position.y;
+     //pose_vio->pose.pose.position.x=vioKeyPose->pose.pose.position.x;
+     //pose_vio->pose.pose.position.z=vioKeyPose->pose.pose.position.z;
+     //pose_vio->header.stamp=vioKeyPose->header.stamp;
+     //ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
     if(drop_cnt%10==0) {
         pose_vio_buf.push(vioKeyPose);
     }
@@ -88,13 +88,12 @@ void CreatMap(){
             pointcloud_buf.pop();
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::fromROSMsg(*pointCloudMsg,*pointCloud);
-
             Eigen::Isometry3d transform_pose = Eigen::Isometry3d::Identity();
             transform_pose =  NavMsg2Isometry3D(vioPose);
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_point(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::transformPointCloud(*pointCloud,*transformed_point,transform_pose.cast<float>());
             *map+=*transformed_point;
-            if(i_cnt%600==0){
+            if(i_cnt%60==0){
                 sensor_msgs::PointCloud2 pointMapMsg;
                 pcl::toROSMsg(*map,pointMapMsg);
                 pointMapMsg.header.stamp=pointCloud_stamp;
