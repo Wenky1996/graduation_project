@@ -19,6 +19,8 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 
+#include "PointCloudProcess.h"
+
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr map(new pcl::PointCloud<pcl::PointXYZRGB>());
 
 std::queue<nav_msgs::Odometry::ConstPtr> pose_vio_buf;
@@ -33,7 +35,7 @@ Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::ConstPtr NavMsg);
 
 ros::Publisher map_pub;
 int drop_cnt=0;
-
+PointCloudProcess pcProcessing(0.02);
 
 int main(int argc ,char **argv){
     ros::init(argc, argv, "map_create");
@@ -48,7 +50,7 @@ int main(int argc ,char **argv){
 }
 
 void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg) {
-    if(drop_cnt%10==0) {
+    if(drop_cnt%5==0) {
         pointcloud_buf.push(pointCloudmsg);
         ROS_INFO("point cloud time stamp %f",pointCloudmsg->header.stamp.toSec());
     }
@@ -57,18 +59,8 @@ void PointCloudHandler(const sensor_msgs::PointCloud2ConstPtr &pointCloudmsg) {
 }
 
 void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose){
-     //nav_msgs::Odometry::Ptr pose_vio=NULL;
-     // pose_vio->pose.pose.orientation.w=vioKeyPose->pose.pose.orientation.w;
-    //ROS_INFO("pose.pose.position x= %f",vioKeyPose->pose.pose.position.x);
-    //pose_vio->pose.pose.orientation.x=vioKeyPose->pose.pose.orientation.x;
-    //pose_vio->pose.pose.orientation.y=vioKeyPose->pose.pose.orientation.y;
-    //pose_vio->pose.pose.orientation.z=vioKeyPose->pose.pose.orientation.z;
-    //pose_vio->pose.pose.position.y=vioKeyPose->pose.pose.position.y;
-    //pose_vio->pose.pose.position.x=vioKeyPose->pose.pose.position.x;
-    //pose_vio->pose.pose.position.z=vioKeyPose->pose.pose.position.z;
-    //pose_vio->header.stamp=vioKeyPose->header.stamp;
-    //ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
-    if(drop_cnt%10==0) {
+
+    if(drop_cnt%5==0) {
         pose_vio_buf.push(vioKeyPose);
         ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
     }
@@ -88,15 +80,19 @@ void CreatMap(){
         if(abs(vio_stamp.toSec()-pointCloud_stamp.toSec())<0.03){//1/30小于1帧
             pose_vio_buf.pop();
             pointcloud_buf.pop();
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud_old(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-            pcl::fromROSMsg(*pointCloudMsg,*pointCloud);
+            pcl::fromROSMsg(*pointCloudMsg,*pointCloud_old);
 
+            pcProcessing.VoexlFilter(pointCloud_old,pointCloud);          //对点云进行体素滤波
+            ROS_INFO("pointCloud_old size = %d",pointCloud_old->points.size());
+            ROS_INFO("pointCloud size = %d",pointCloud->points.size());
             Eigen::Isometry3d transform_pose = Eigen::Isometry3d::Identity();
             transform_pose =  NavMsg2Isometry3D(vioPose);
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformed_point(new pcl::PointCloud<pcl::PointXYZRGB>());
             pcl::transformPointCloud(*pointCloud,*transformed_point,transform_pose.cast<float>());
             *map+=*transformed_point;
-            if(i_cnt%60==0){
+            if(i_cnt%6==0){
                 sensor_msgs::PointCloud2 pointMapMsg;
                 pcl::toROSMsg(*map,pointMapMsg);
                 pointMapMsg.header.stamp=pointCloud_stamp;
@@ -127,7 +123,10 @@ Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::ConstPtr NavMsg){
     pose_quaternion.x()=NavMsg->pose.pose.orientation.x;
     pose_quaternion.y()=NavMsg->pose.pose.orientation.y;
     pose_quaternion.z()=NavMsg->pose.pose.orientation.z;
-    pose_transalte<<NavMsg->pose.pose.position.x,NavMsg->pose.pose.position.y,NavMsg->pose.pose.position.z;
+    pose_transalte.x()=NavMsg->pose.pose.position.x;
+    pose_transalte.y()=NavMsg->pose.pose.position.y;
+    pose_transalte.z()=NavMsg->pose.pose.position.z;
+    //pose_transalte<<NavMsg->pose.pose.position.x,NavMsg->pose.pose.position.y,NavMsg->pose.pose.position.z;
     T.rotate(pose_quaternion);
     T.pretranslate(pose_transalte);//Applies on the left the translation matri
     // x represented by the vector other to *this and returns a reference to
