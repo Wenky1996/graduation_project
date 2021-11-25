@@ -46,7 +46,8 @@ int main(int argc ,char **argv){
 
     auto subImage = n.subscribe("/camera/color/image_raw", 100, ImageHandler);
     auto subDepth = n.subscribe("/camera/aligned_depth_to_color/image_raw",100,DepthHandler);
-    pointcloudPublish=n.advertise<sensor_msgs::PointCloud2>("fusion_pointcloud",100);
+    //pointcloudPublish=n.advertise<sensor_msgs::PointCloud2>("fusion_pointcloud",100);
+    pointcloudPublish=n.advertise<sensor_msgs::PointCloud2>("/camera/depth/color/points",100);
     std::thread rgbd2pointcloud_thread{Rgbd2Point};
     ros::spin();
     return 0;
@@ -91,8 +92,8 @@ void Rgbd2Point(){
                     }
                     pcl::PointXYZRGB p;
                     p.z=static_cast<double >(d)/camera_factor;
-                    p.x=(i-3.2896954345703125e+02)*p.z/6.091984252929688e+02;
-                    p.y=(j-2.3813449096679688e+02)*p.z/6.098977661132812e+02;
+                    p.x=(j-3.2896954345703125e+02)*p.z/6.091984252929688e+02;
+                    p.y=(i-2.3813449096679688e+02)*p.z/6.098977661132812e+02;
 
                     p.b=rgb_image.ptr<uchar>(i)[j*3];
                     p.g=rgb_image.ptr<uchar>(i)[j*3+1];

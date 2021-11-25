@@ -41,7 +41,7 @@ int main(int argc ,char **argv){
     ros::init(argc, argv, "map_create");
     ros::NodeHandle n;
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-    ros::Subscriber subPointCloud = n.subscribe<sensor_msgs::PointCloud2>("/fusion_pointcloud", 100, PointCloudHandler);
+    ros::Subscriber subPointCloud = n.subscribe<sensor_msgs::PointCloud2>("/camera/depth/color/points", 100, PointCloudHandler);
     ros::Subscriber subkeyPose = n.subscribe("/pose_graph/camera_pose",2000,KeyPoseHandler);
     map_pub = n.advertise<sensor_msgs::PointCloud2>("create_map", 100);
     std::thread creat_map_thread{CreatMap};
@@ -62,7 +62,6 @@ void KeyPoseHandler(const nav_msgs::Odometry::ConstPtr &vioKeyPose){
 
     if(drop_cnt%5==0) {
         pose_vio_buf.push(vioKeyPose);
-        ROS_INFO("vio time stamp %f",vioKeyPose->header.stamp.toSec());
     }
 }
 
@@ -123,10 +122,7 @@ Eigen::Isometry3d NavMsg2Isometry3D(nav_msgs::Odometry::ConstPtr NavMsg){
     pose_quaternion.x()=NavMsg->pose.pose.orientation.x;
     pose_quaternion.y()=NavMsg->pose.pose.orientation.y;
     pose_quaternion.z()=NavMsg->pose.pose.orientation.z;
-    pose_transalte.x()=NavMsg->pose.pose.position.x;
-    pose_transalte.y()=NavMsg->pose.pose.position.y;
-    pose_transalte.z()=NavMsg->pose.pose.position.z;
-    //pose_transalte<<NavMsg->pose.pose.position.x,NavMsg->pose.pose.position.y,NavMsg->pose.pose.position.z;
+    pose_transalte<<NavMsg->pose.pose.position.x,NavMsg->pose.pose.position.y,NavMsg->pose.pose.position.z;
     T.rotate(pose_quaternion);
     T.pretranslate(pose_transalte);//Applies on the left the translation matri
     // x represented by the vector other to *this and returns a reference to
