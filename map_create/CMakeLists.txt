@@ -25,8 +25,8 @@ include_directories(
 
 include_directories( "/usr/include/eigen3" )
 
-add_executable(create_map src/create_map_node.cpp  src/PointCloudProcess.cpp)
-add_executable(Rgbd2PointCloud src/Rgbd2PointCloud_node.cpp)
+add_executable(create_map src/create_map_node.cpp)
+add_executable(Rgbd2PointCloud src/Rgbd2PointCloud_node.cpp src/PointCloudProcess.cpp)
 
 target_link_libraries(create_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(Rgbd2PointCloud ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBS})

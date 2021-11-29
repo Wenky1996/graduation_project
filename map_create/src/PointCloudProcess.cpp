@@ -24,3 +24,13 @@ void PointCloudProcess::VoexlFilter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_i
     sor.setLeafSize(voxel_param_,voxel_param_,voxel_param_);
     sor.filter(*pc_out);
 }
+
+
+void PointCloudProcess::OutlierFilter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_in,
+                                      pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out) {
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+    sor.setInputCloud(pc_in);
+    sor.setMeanK(near_points_);
+    sor.setStddevMulThresh(outliers_threshold_);
+    sor.filter(*pc_out);
+}
