@@ -35,7 +35,7 @@ queue<sensor_msgs::ImageConstPtr> depth_img_buf;
 const double camera_factor = 1000; //怎么获取该值
 
 ros::Publisher pointcloudPublish;
-PointCloudProcess pointCloudProcess(0.08);
+PointCloudProcess pointCloudProcess(0.04);
 void ImageHandler(const sensor_msgs::ImageConstPtr &msg_image);
 void DepthHandler(const sensor_msgs::ImageConstPtr &msg_depth);
 void Rgbd2Point();
@@ -66,10 +66,6 @@ void ImageHandler(const sensor_msgs::ImageConstPtr &msg_image){
 
 void DepthHandler(const sensor_msgs::ImageConstPtr &msg_depth){
     depth_img_buf.push(msg_depth);
-    //ptr_depth=cv_bridge::toCvCopy(msg_depth,sensor_msgs::image_encodings::TYPE_32FC1);
-    //cv::Mat depth_image=ptr_depth->image;
-    //cv::imshow("the depth image",depth_image);
-   //cv::waitKey(10);
 }
 
 void Rgbd2Point(){

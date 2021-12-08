@@ -7,5 +7,5 @@
 * 2 launch file using only one realsence_color.launch that set up rosbag and rviz node 
 * 3 save the map using command 
 ```
-  rosservice call /save_map
+  ``rosservice call /save_map``
 ```
